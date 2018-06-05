@@ -1,6 +1,7 @@
 #!/bin/env python3
 import subprocess, time, socket, random
 import argparse
+from color import *
 # author: guisheng.ren
 # version: 1.1
 # prog: tping.exe
@@ -109,19 +110,19 @@ class Check_Network:
                         # 延时添加到延时列表
 
                         if self.verbose:
-                            print('%-15s \033[32m<\033[0m %-5.1f %s' % (conn[3], conn[1], conn[2]))
+                            printGreen('%-15s < %-5.1f %s' % (conn[3], conn[1], conn[2]))
                         else:
                             print("%-5.1f %s" % (conn[1], conn[2]))
                     elif conn[0] == self.STATUS_CODE_CONNECT_REFUSED:
                         check_failure_count += 1
                         if self.verbose:
-                            print('%-15s \033[35m<\033[0m %s' % (conn[3], conn[1]))
+                            printRed('%-15s < %s' % (conn[3], conn[1]))
                         else:
                             print(conn[1])
                     else:
                         check_failure_count += 1
                         if self.verbose:
-                            print('%-15s \033[31m<\033[0m timeout' % conn[3])
+                            printRed('%-15s < timeout' % conn[3])
                         else:
                             print("timeout")
             else:
@@ -135,29 +136,35 @@ class Check_Network:
                         # 延时添加到延时列表
 
                         if self.verbose:
-                            print('%-15s \033[32m<\033[0m %-5.1f %s' % (conn[3], conn[1], conn[2]))
+                            printGreen('%-15s < %-5.1f %s' % (conn[3], conn[1], conn[2]))
                         else:
                             print("%-5.1f %s" % (conn[1], conn[2]))
                     elif conn[0] == self.STATUS_CODE_CONNECT_REFUSED:
                         check_failure_count += 1
                         if self.verbose:
-                            print('%-15s \033[35m<\033[0m %s' % (conn[3], conn[1]))
+                            printRed('%-15s < %s' % (conn[3], conn[1]))
                         else:
                             print(conn[1])
                     else:
                         check_failure_count += 1
                         if self.verbose:
-                            print('%-15s \033[31m<\033[0m timeout' % conn[3])
+                            printRed('%-15s < timeout' % conn[3])
                         else:
                             print("timeout")
         finally:
+            try:
+                avg_ms = sum(ms_list) / len(ms_list)
+            except ZeroDivisionError:
+                # 捕获全部检测失败的情况。
+                avg_ms = 0
+
             footer = "\rtotal: %d  success: %d  failure: %d  s_rate: %.2f  f_rate: %.2f  avg_ms: %.2f ms" % (
                 check_count,
                 check_success_count,
                 check_failure_count,
                 check_success_count / check_count,
                 check_failure_count / check_count,
-                sum(ms_list) / len(ms_list)
+                avg_ms
             )
             print(footer)
 
