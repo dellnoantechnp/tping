@@ -39,17 +39,22 @@ else:
                'blue': 34,
         }
     }
+
     def UseStyle(msg, mode = '', fore = '', back = '40'):
-        fore  = '%s' % STYLE['fore'][fore] if STYLE['fore'].has_key(fore) else ''
+        fore  = '%s' % STYLE['fore'][fore] if fore in STYLE['fore'] else ''
         style = ';'.join([s for s in [mode, fore, back] if s])
         style = '\033[%sm' % style if style else ''
         end   = '\033[%sm' % 0 if style else ''
         return '%s%s%s' % (style, msg, end)
+
     def printRed(msg):
         print(UseStyle(msg,fore='red'))
+
     def printGreen(msg):
         print(UseStyle(msg,fore='green'))
+
     def printYellow(msg):
         print(UseStyle(msg,fore='yellow'))
+
     def printBlue(msg):
         print(UseStyle(msg,fore='blue'))
