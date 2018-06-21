@@ -297,6 +297,7 @@ parser.add_argument("-p", '--port', action = 'store', type = int, help = 'Port')
 parser.add_argument("-c", '--count', action = 'store', type = int, default = 10, help = 'Check pin count')
 parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'more verbose message')
 parser.add_argument('-q', '--quiet', action = 'store_true', default = False, help = 'Silent or quiet mode.')
+parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.2')
 args = parser.parse_args()
 
 instance = Check_Network(args.verbose, args.quiet)
