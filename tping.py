@@ -3,7 +3,7 @@ import subprocess, time, socket, random
 import argparse
 from color import *
 # author: guisheng.ren
-# version: 1.1
+# version: 1.2
 # prog: tping.exe
 
 class Check_Network:
@@ -56,7 +56,7 @@ class Check_Network:
         sock.settimeout(connect_timeout)
         ip_addr = self.to_ipaddr(host)
         if ip_addr[0] != self.STATUS_CODE_SUCCESS:
-            return ip_addr[1]
+            return ip_addr
         ip = random.sample(ip_addr[1], 1)[0]
         start = time.time()
         try:
@@ -124,6 +124,14 @@ class Check_Network:
                             pass
                         else:
                             print(conn[1])
+                    elif conn[0] == self.STATUS_CODE_DOMAIN_VALUE_ERROR:
+                        check_failure_count += 1
+                        if self.verbose:
+                            printRed('%-30s < %s' % (conn[1], 'invalid destination'))
+                        elif self.quiet:
+                            pass
+                        else:
+                            print("invalid destination")
                     else:
                         check_failure_count += 1
                         if self.verbose:
@@ -156,6 +164,14 @@ class Check_Network:
                             pass
                         else:
                             print(conn[1])
+                    elif conn[0] == self.STATUS_CODE_DOMAIN_VALUE_ERROR:
+                        check_failure_count += 1
+                        if self.verbose:
+                            printRed('%-30s < %s' % (conn[1], 'invalid destination'))
+                        elif self.quiet:
+                            pass
+                        else:
+                            print("invalid destination")
                     else:
                         check_failure_count += 1
                         if self.verbose:
