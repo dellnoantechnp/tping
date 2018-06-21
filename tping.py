@@ -16,8 +16,9 @@ class Check_Network:
     STATUS_CODE_UDP_TIMEOUT = 6
     __CHECK_DOMAIN_LIST = ['www.baidu.com', 'www.sina.com.cn', 'mirrors.aliyun.com']
 
-    def __init__(self, verbose):
+    def __init__(self, verbose, quiet = False):
         self.verbose = verbose
+        self.quiet = quiet
 
     def __check_dns_resolve(self):
         for domain in self.__CHECK_DOMAIN_LIST:
@@ -111,18 +112,24 @@ class Check_Network:
 
                         if self.verbose:
                             printGreen('%-15s < %-5.1f %s' % (conn[3], conn[1], conn[2]))
+                        elif self.quiet:
+                            pass
                         else:
                             print("%-5.1f %s" % (conn[1], conn[2]))
                     elif conn[0] == self.STATUS_CODE_CONNECT_REFUSED:
                         check_failure_count += 1
                         if self.verbose:
                             printRed('%-15s < %s' % (conn[3], conn[1]))
+                        elif self.quiet:
+                            pass
                         else:
                             print(conn[1])
                     else:
                         check_failure_count += 1
                         if self.verbose:
                             printRed('%-15s < timeout' % conn[3])
+                        elif self.quiet:
+                            pass
                         else:
                             print("timeout")
             else:
@@ -137,18 +144,24 @@ class Check_Network:
 
                         if self.verbose:
                             printGreen('%-15s < %-5.1f %s' % (conn[3], conn[1], conn[2]))
+                        elif self.quiet:
+                            pass
                         else:
                             print("%-5.1f %s" % (conn[1], conn[2]))
                     elif conn[0] == self.STATUS_CODE_CONNECT_REFUSED:
                         check_failure_count += 1
                         if self.verbose:
                             printRed('%-15s < %s' % (conn[3], conn[1]))
+                        elif self.quiet:
+                            pass
                         else:
                             print(conn[1])
                     else:
                         check_failure_count += 1
                         if self.verbose:
                             printRed('%-15s < timeout' % conn[3])
+                        elif self.quiet:
+                            pass
                         else:
                             print("timeout")
         finally:
@@ -267,9 +280,10 @@ parser.add_argument("-d", "--destination", action = 'store', help = 'ip_addr. ho
 parser.add_argument("-p", '--port', action = 'store', type = int, help = 'Port')
 parser.add_argument("-c", '--count', action = 'store', type = int, default = 10, help = 'Check pin count')
 parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'more verbose message')
+parser.add_argument('-q', '--quiet', action = 'store_true', default = False, help = 'Silent or quiet mode.')
 args = parser.parse_args()
 
-instance = Check_Network(args.verbose)
+instance = Check_Network(args.verbose, args.quiet)
 try:
     instance.get_tcp_status(host = args.destination, port = args.port, count = args.count)
 except KeyboardInterrupt:
