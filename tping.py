@@ -71,9 +71,9 @@ class Check_Network:
                 time.sleep(0.01 - time_consuming / 1000)
                 # 保持两次检测时间最小时间差为 10ms
             return self.STATUS_CODE_SUCCESS, time_consuming, 'ms', ip
-        except (socket.timeout) as err:
+        except (socket.timeout, ConnectionRefusedError) as err:
             time.sleep(0.01)
-            if err.errno == 61 or err.errno == 113:
+            if err.errno == 61 or err.errno == 113 or err.errno == 111:
                 return self.STATUS_CODE_CONNECT_REFUSED, err.strerror, None, ip
             else:
                 return self.STATUS_CODE_TCP_TIMEOUT, connect_timeout, None, ip
