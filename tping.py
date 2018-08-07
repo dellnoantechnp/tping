@@ -2,8 +2,9 @@
 import subprocess, time, socket, random
 import argparse
 from color import *
-# author: guisheng.ren
-# version: 1.2
+import threading
+# author: Eric.Ren
+# version: 1.3
 # prog: tping.exe
 
 class Check_Network:
@@ -14,11 +15,13 @@ class Check_Network:
     STATUS_CODE_DOMAIN_VALUE_ERROR = 4
     STATUS_CODE_CONNECT_REFUSED = 5
     STATUS_CODE_UDP_TIMEOUT = 6
+    STATUS_CODE_PROMISE_TIMEOUT = 7
     __CHECK_DOMAIN_LIST = ['www.baidu.com', 'www.sina.com.cn', 'mirrors.aliyun.com']
 
-    def __init__(self, verbose, quiet = False):
+    def __init__(self, verbose, quiet = False, promise = False):
         self.verbose = verbose
         self.quiet = quiet
+        self.promise = promise
 
     def __check_dns_resolve(self):
         for domain in self.__CHECK_DOMAIN_LIST:
@@ -96,18 +99,22 @@ class Check_Network:
         return socket.gethostbyname(socket.gethostname())
 
     def get_tcp_status(self, host, port = 80, count = 10):
-        check_count = 0
-        check_success_count = 0
-        check_failure_count = 0
-        ms_list = []
+        self.check_count = 0
+        self.check_success_count = 0
+        self.check_failure_count = 0
+        self.ms_list = []
+        if self.promise:
+            count = 0
+            self.check_progress = True
+
         try:
             if count == 0 or count < 0:
-                while True:
+                while self.check_progress:
                     conn = self._check_tcp_status(host, port = port)
-                    check_count += 1
+                    self.check_count += 1
                     if conn[0] == 0:
-                        check_success_count += 1
-                        ms_list.append(conn[1])
+                        self.check_success_count += 1
+                        self.ms_list.append(conn[1])
                         # 延时添加到延时列表
 
                         if self.verbose:
@@ -117,7 +124,7 @@ class Check_Network:
                         else:
                             print("%-5.1f %s" % (conn[1], conn[2]))
                     elif conn[0] == self.STATUS_CODE_CONNECT_REFUSED:
-                        check_failure_count += 1
+                        self.check_failure_count += 1
                         if self.verbose:
                             printRed('%-15s < %s' % (conn[3], conn[1]))
                         elif self.quiet:
@@ -125,7 +132,7 @@ class Check_Network:
                         else:
                             print(conn[1])
                     elif conn[0] == self.STATUS_CODE_DOMAIN_VALUE_ERROR:
-                        check_failure_count += 1
+                        self.check_failure_count += 1
                         if self.verbose:
                             printRed('%-30s < %s' % (conn[1], 'invalid destination'))
                         elif self.quiet:
@@ -133,7 +140,7 @@ class Check_Network:
                         else:
                             print("invalid destination")
                     else:
-                        check_failure_count += 1
+                        self.check_failure_count += 1
                         if self.verbose:
                             printRed('%-15s < timeout' % conn[3])
                         elif self.quiet:
@@ -144,10 +151,10 @@ class Check_Network:
                 while count > 0:
                     count -= 1
                     conn = self._check_tcp_status(host, port = port)
-                    check_count += 1
+                    self.check_count += 1
                     if conn[0] == 0:
-                        check_success_count += 1
-                        ms_list.append(conn[1])
+                        self.check_success_count += 1
+                        self.ms_list.append(conn[1])
                         # 延时添加到延时列表
 
                         if self.verbose:
@@ -157,7 +164,7 @@ class Check_Network:
                         else:
                             print("%-5.1f %s" % (conn[1], conn[2]))
                     elif conn[0] == self.STATUS_CODE_CONNECT_REFUSED:
-                        check_failure_count += 1
+                        self.check_failure_count += 1
                         if self.verbose:
                             printRed('%-15s < %s' % (conn[3], conn[1]))
                         elif self.quiet:
@@ -165,7 +172,7 @@ class Check_Network:
                         else:
                             print(conn[1])
                     elif conn[0] == self.STATUS_CODE_DOMAIN_VALUE_ERROR:
-                        check_failure_count += 1
+                        self.check_failure_count += 1
                         if self.verbose:
                             printRed('%-30s < %s' % (conn[1], 'invalid destination'))
                         elif self.quiet:
@@ -173,7 +180,7 @@ class Check_Network:
                         else:
                             print("invalid destination")
                     else:
-                        check_failure_count += 1
+                        self.check_failure_count += 1
                         if self.verbose:
                             printRed('%-15s < timeout' % conn[3])
                         elif self.quiet:
@@ -181,21 +188,33 @@ class Check_Network:
                         else:
                             print("timeout")
         finally:
+                self.get_footer_stats()
+
+    def get_footer_stats(self):
+        try:
+            self.check_progress = False
             try:
-                avg_ms = sum(ms_list) / len(ms_list)
+                avg_ms = sum(self.ms_list) / len(self.ms_list)
             except ZeroDivisionError:
                 # 捕获全部检测失败的情况。
                 avg_ms = 0
 
             footer = "\rtotal: %d  success: %d  failure: %d  s_rate: %.2f  f_rate: %.2f  avg_ms: %.2f ms" % (
-                check_count,
-                check_success_count,
-                check_failure_count,
-                check_success_count / check_count,
-                check_failure_count / check_count,
+                self.check_count,
+                self.check_success_count,
+                self.check_failure_count,
+                self.check_success_count / self.check_count,
+                self.check_failure_count / self.check_count,
                 avg_ms
             )
             print(footer)
+            exit(0)
+        except:
+            pass
+
+    def end_promise(self):
+        # 结束 promise 保证时间，终止网络延时检测，打印结果
+        self.check_progress = False
 
     def check_tcp_status(self, host, port = 80, count = 1):
         return tuple([self._check_tcp_status(host, port = port)[0] for i in range(count)])
@@ -294,14 +313,19 @@ class Check_Network:
 parser = argparse.ArgumentParser(prog = 'tping', description = "检测网络 tcp 连接有效性以及往返延时时间。")
 parser.add_argument("-d", "--destination", action = 'store', help = 'ip_addr. hostname. DomainName')
 parser.add_argument("-p", '--port', action = 'store', type = int, help = 'Port')
-parser.add_argument("-c", '--count', action = 'store', type = int, default = 10, help = 'Check pin count')
+parser.add_argument("-c", '--count', action = 'store', type = int, default = 10, help = 'Check ping count')
 parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'more verbose message')
 parser.add_argument('-q', '--quiet', action = 'store_true', default = False, help = 'Silent or quiet mode.')
-parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.2')
+parser.add_argument('-P', '--promise', action = 'store', type = int, default = 0, help = '保证结果返回的时间 seconds，设置此参数后 -c --count 将失效')
+parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.3')
 args = parser.parse_args()
 
-instance = Check_Network(args.verbose, args.quiet)
+instance = Check_Network(args.verbose, args.quiet, args.promise)
 try:
+    if args.promise:
+        t1 = threading.Timer(args.promise, instance.end_promise)
+        t1.setName("Promise thread")
+        t1.start()
     instance.get_tcp_status(host = args.destination, port = args.port, count = args.count)
-except KeyboardInterrupt:
+except:
     pass
