@@ -4,7 +4,7 @@ import argparse
 from color import *
 import threading
 # author: Eric.Ren
-# version: 1.3
+# version: 1.3.1
 # prog: tping.exe
 
 class Check_Network:
@@ -109,7 +109,8 @@ class Check_Network:
 
         try:
             if count == 0 or count < 0:
-                while self.check_progress:
+                while not self.promise or self.check_progress:
+                    # 当promise选项未设置，且 count 为 0点时候，无限检测。
                     conn = self._check_tcp_status(host, port = port)
                     self.check_count += 1
                     if conn[0] == 0:
@@ -317,15 +318,19 @@ parser.add_argument("-c", '--count', action = 'store', type = int, default = 10,
 parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'more verbose message')
 parser.add_argument('-q', '--quiet', action = 'store_true', default = False, help = 'Silent or quiet mode.')
 parser.add_argument('-P', '--promise', action = 'store', type = int, default = 0, help = '保证结果返回的时间 seconds，设置此参数后 -c --count 将失效')
-parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.3')
+parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.3.1')
 args = parser.parse_args()
 
 instance = Check_Network(args.verbose, args.quiet, args.promise)
 try:
     if args.promise:
-        t1 = threading.Timer(args.promise, instance.end_promise)
-        t1.setName("Promise thread")
-        t1.start()
+        try:
+            t1 = threading.Timer(args.promise, instance.end_promise)
+            t1.setName("Promise thread")
+            t1.start()
+        except KeyboardInterrupt:
+            # 修复 Promise 线程等待期间，由于 ctrl - C 造成的异常抛错问题。
+            pass
     instance.get_tcp_status(host = args.destination, port = args.port, count = args.count)
 except:
     pass
