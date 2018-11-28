@@ -5,7 +5,7 @@ eg:
 ```
 # python3 tping.py -d www.amazon.com -p 443 -h
 usage: tping [-h] [-d DESTINATION] [-p PORT] [-c COUNT] [-v] [-q] [-P PROMISE]
-             [-V]
+             [--socks5 address:port] [-V]
 
 检测网络 tcp 连接有效性以及往返延时时间。
 
