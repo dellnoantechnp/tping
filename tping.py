@@ -3,8 +3,10 @@ import subprocess, time, socket, random
 import argparse
 from color import *
 import threading
+import socks
+from math import trunc
 # author: Eric.Ren
-# version: 1.3.1
+# version: 1.4
 # prog: tping.exe
 
 class Check_Network:
@@ -14,14 +16,27 @@ class Check_Network:
     STATUS_CODE_UDP_FAIL = 3
     STATUS_CODE_DOMAIN_VALUE_ERROR = 4
     STATUS_CODE_CONNECT_REFUSED = 5
+    STATUS_CODE_SOCKS5_CONNECT_REFUSED = 15
     STATUS_CODE_UDP_TIMEOUT = 6
     STATUS_CODE_PROMISE_TIMEOUT = 7
     __CHECK_DOMAIN_LIST = ['www.baidu.com', 'www.sina.com.cn', 'mirrors.aliyun.com']
 
-    def __init__(self, verbose, quiet = False, promise = False):
+    def __init__(self, verbose, quiet = False, promise = False, socks5:str = False):
         self.verbose = verbose
         self.quiet = quiet
         self.promise = promise
+        if socks5:
+            socks5_info = socks5.split(":")
+            if len(socks5_info) == 1:
+                self.socks5_addr = socks5_info[0]
+                self.socks5_port = 1080
+            elif len(socks5_info) == 2:
+                self.socks5_addr = socks5_info[0]
+                self.socks5_port = int(socks5_info[1])
+            else:
+                raise Exception("socks5 addr was wrong!!")
+        else:
+            self.socks5_addr = False
 
     def __check_dns_resolve(self):
         for domain in self.__CHECK_DOMAIN_LIST:
@@ -54,8 +69,14 @@ class Check_Network:
         :param protect: 添加最短时间的保护功能,布尔值
         :return:
         '''
-        connect_timeout = 1
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if self.socks5_addr and self.socks5_port:
+            sock = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.set_proxy(socks.SOCKS5, self.socks5_addr, self.socks5_port)
+            connect_timeout = 3
+            # 设置代理后，默认socket 连接超时时间加大为 3 秒。.
+        else:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            connect_timeout = 1
         sock.settimeout(connect_timeout)
         ip_addr = self.to_ipaddr(host)
         if ip_addr[0] != self.STATUS_CODE_SUCCESS:
@@ -64,8 +85,16 @@ class Check_Network:
         start = time.time()
         try:
             sock.connect((ip, int(port)))
-            # blocking
-            end = time.time()
+            # 设置 socks5 代理过后，这里的connect 是连接到 socks5 地址，并不是连接到真是目标地址。
+
+            if self.socks5_addr and self.socks5_port:
+                connect_end = time.time()
+                sock.sendall(b"\0")
+                sock.recv(4096).decode()
+                end = time.time()
+            else:
+                # blocking
+                end = time.time()
             # 取连接后的时间戳
             time_consuming = (end - start) * 1000
             # 取两次时间戳的差值，并转换为 ms
@@ -74,10 +103,12 @@ class Check_Network:
                 time.sleep(0.01 - time_consuming / 1000)
                 # 保持两次检测时间最小时间差为 10ms
             return self.STATUS_CODE_SUCCESS, time_consuming, 'ms', ip
-        except (socket.timeout, ConnectionRefusedError) as err:
+        except (socket.timeout, ConnectionRefusedError, socks.ProxyConnectionError) as err:
             time.sleep(0.01)
             if err.errno == 61 or err.errno == 113 or err.errno == 111:
                 return self.STATUS_CODE_CONNECT_REFUSED, err.strerror, None, ip
+            elif isinstance(err.socket_err, ConnectionRefusedError):
+                return self.STATUS_CODE_SOCKS5_CONNECT_REFUSED, "ProxyConnectionError", None, ip
             else:
                 return self.STATUS_CODE_TCP_TIMEOUT, connect_timeout, None, ip
         finally:
@@ -94,6 +125,9 @@ class Check_Network:
             for item in resolv:
                ipaddrs.add(item[-1][0])
             return self.STATUS_CODE_SUCCESS, tuple(ipaddrs)
+
+    def to_ipaddr_use_socks5(self, host):
+        pass
 
     def get_local_addr(self):
         return socket.gethostbyname(socket.gethostname())
@@ -113,21 +147,21 @@ class Check_Network:
                     # 当promise选项未设置，且 count 为 0点时候，无限检测。
                     conn = self._check_tcp_status(host, port = port)
                     self.check_count += 1
-                    if conn[0] == 0:
+                    if conn[0] == self.STATUS_CODE_SUCCESS:
                         self.check_success_count += 1
                         self.ms_list.append(conn[1])
                         # 延时添加到延时列表
 
                         if self.verbose:
-                            printGreen('%-15s < %-5.1f %s' % (conn[3], conn[1], conn[2]))
+                            printGreen('%-15s <- %-5.1f %s' % (conn[3], conn[1], conn[2]))
                         elif self.quiet:
                             pass
                         else:
                             print("%-5.1f %s" % (conn[1], conn[2]))
-                    elif conn[0] == self.STATUS_CODE_CONNECT_REFUSED:
+                    elif (conn[0] == self.STATUS_CODE_CONNECT_REFUSED) or (conn[0] == self.STATUS_CODE_SOCKS5_CONNECT_REFUSED):
                         self.check_failure_count += 1
                         if self.verbose:
-                            printRed('%-15s < %s' % (conn[3], conn[1]))
+                            printRed('%-15s <- %s' % (conn[3], conn[1]))
                         elif self.quiet:
                             pass
                         else:
@@ -135,7 +169,7 @@ class Check_Network:
                     elif conn[0] == self.STATUS_CODE_DOMAIN_VALUE_ERROR:
                         self.check_failure_count += 1
                         if self.verbose:
-                            printRed('%-30s < %s' % (conn[1], 'invalid destination'))
+                            printRed('%-30s <- %s' % (conn[1], 'invalid destination'))
                         elif self.quiet:
                             pass
                         else:
@@ -143,7 +177,7 @@ class Check_Network:
                     else:
                         self.check_failure_count += 1
                         if self.verbose:
-                            printRed('%-15s < timeout' % conn[3])
+                            printRed('%-15s <- timeout' % conn[3])
                         elif self.quiet:
                             pass
                         else:
@@ -159,15 +193,15 @@ class Check_Network:
                         # 延时添加到延时列表
 
                         if self.verbose:
-                            printGreen('%-15s < %-5.1f %s' % (conn[3], conn[1], conn[2]))
+                            printGreen('%-15s <- %-5.1f %s' % (conn[3], conn[1], conn[2]))
                         elif self.quiet:
                             pass
                         else:
                             print("%-5.1f %s" % (conn[1], conn[2]))
-                    elif conn[0] == self.STATUS_CODE_CONNECT_REFUSED:
+                    elif (conn[0] == self.STATUS_CODE_CONNECT_REFUSED) or (conn[0] == self.STATUS_CODE_SOCKS5_CONNECT_REFUSED):
                         self.check_failure_count += 1
                         if self.verbose:
-                            printRed('%-15s < %s' % (conn[3], conn[1]))
+                            printRed('%-15s <- %s' % (conn[3], conn[1]))
                         elif self.quiet:
                             pass
                         else:
@@ -175,7 +209,7 @@ class Check_Network:
                     elif conn[0] == self.STATUS_CODE_DOMAIN_VALUE_ERROR:
                         self.check_failure_count += 1
                         if self.verbose:
-                            printRed('%-30s < %s' % (conn[1], 'invalid destination'))
+                            printRed('%-30s <- %s' % (conn[1], 'invalid destination'))
                         elif self.quiet:
                             pass
                         else:
@@ -183,7 +217,7 @@ class Check_Network:
                     else:
                         self.check_failure_count += 1
                         if self.verbose:
-                            printRed('%-15s < timeout' % conn[3])
+                            printRed('%-15s <- timeout' % conn[3])
                         elif self.quiet:
                             pass
                         else:
@@ -209,8 +243,17 @@ class Check_Network:
                 avg_ms
             )
             print(footer)
-            exit(0)
-        except:
+            if self.check_success_count / self.check_count == 0:
+                # 如果一个都没有成功，则返回状态码 1.
+                exit(1)
+            elif self.check_success_count / self.check_count < 1:
+                # 返回成功率的整数状态码
+                exit(trunc(self.check_success_count / self.check_count * 100))
+            else:
+                # 全部成功，退出状态码 0。
+                exit(0)
+        except Exception:
+            # 指定 Exception 不捕获 exit 退出异常动作。
             pass
 
     def end_promise(self):
@@ -318,10 +361,15 @@ parser.add_argument("-c", '--count', action = 'store', type = int, default = 10,
 parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'more verbose message')
 parser.add_argument('-q', '--quiet', action = 'store_true', default = False, help = 'Silent or quiet mode.')
 parser.add_argument('-P', '--promise', action = 'store', type = int, default = 0, help = '保证结果返回的时间 seconds，设置此参数后 -c --count 将失效')
-parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.3.1')
+parser.add_argument('--socks5', action = 'store', type = str, required = False, default = False, help = 'set socks5 address')
+parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.4')
 args = parser.parse_args()
 
-instance = Check_Network(args.verbose, args.quiet, args.promise)
+if args.socks5:
+    instance = Check_Network(args.verbose, args.quiet, args.promise, args.socks5)
+else:
+    instance = Check_Network(args.verbose, args.quiet, args.promise)
+
 try:
     if args.promise:
         try:
@@ -332,5 +380,5 @@ try:
             # 修复 Promise 线程等待期间，由于 ctrl - C 造成的异常抛错问题。
             pass
     instance.get_tcp_status(host = args.destination, port = args.port, count = args.count)
-except:
+except Exception:
     pass
