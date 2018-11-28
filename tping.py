@@ -361,7 +361,7 @@ parser.add_argument("-c", '--count', action = 'store', type = int, default = 10,
 parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'more verbose message')
 parser.add_argument('-q', '--quiet', action = 'store_true', default = False, help = 'Silent or quiet mode.')
 parser.add_argument('-P', '--promise', action = 'store', type = int, default = 0, help = '保证结果返回的时间 seconds，设置此参数后 -c --count 将失效')
-parser.add_argument('--socks5', action = 'store', type = str, required = False, default = False, help = 'set socks5 address')
+parser.add_argument('--socks5', action = 'store', type = str, required = False, metavar = "address:port", default = False, help = 'set socks5 proxy address:port [default port 1080]')
 parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.4')
 args = parser.parse_args()
 

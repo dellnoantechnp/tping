@@ -20,6 +20,9 @@ optional arguments:
   -q, --quiet           Silent or quiet mode.
   -P PROMISE, --promise PROMISE
                         保证结果返回的时间 seconds，设置此参数后 -c --count 将失效
+  --socks5 address:port
+                        set socks5 proxy address:port [default port 1080]
+
   -V, --version         show program's version number and exit
 
 
@@ -54,6 +57,12 @@ total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 210.63 m
 210.7 ms
 212.3 ms
 total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 211.57 ms
+
+# python3 tping.py --socks5 127.0.0.1 -d www.amazon.com -p 443 -c 3
+221.1 ms
+219.7 ms
+232.5 ms
+total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 223.53 ms
 
 # python3 tping.py -d www.amazon.com -p 443 -c 20 -q
 total: 20  success: 20  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 211.00 ms
