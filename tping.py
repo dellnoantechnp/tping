@@ -1,12 +1,15 @@
 #!/bin/env python3
-import subprocess, time, socket, random
+import subprocess
+import time
+import socket
+import random
 import argparse
 from color import *
 import threading
 import socks
 from math import trunc
 # author: Eric.Ren
-# version: 1.4
+# version: 1.5
 # prog: tping.exe
 
 class Check_Network:
@@ -17,14 +20,17 @@ class Check_Network:
     STATUS_CODE_DOMAIN_VALUE_ERROR = 4
     STATUS_CODE_CONNECT_REFUSED = 5
     STATUS_CODE_SOCKS5_CONNECT_REFUSED = 15
+    STATUS_CODE_HTTP_PROXY_CONNECT_ERROR = 25
     STATUS_CODE_UDP_TIMEOUT = 6
     STATUS_CODE_PROMISE_TIMEOUT = 7
     __CHECK_DOMAIN_LIST = ['www.baidu.com', 'www.sina.com.cn', 'mirrors.aliyun.com']
 
-    def __init__(self, verbose, quiet = False, promise = False, socks5:str = False):
+    def __init__(self, verbose, quiet = False, promise = False, socks5:str = False,
+                 HTTP_PROXY:str = False, proxy_user = None):
         self.verbose = verbose
         self.quiet = quiet
         self.promise = promise
+        # 拆分 socks5 proxy 信息。
         if socks5:
             socks5_info = socks5.split(":")
             if len(socks5_info) == 1:
@@ -37,6 +43,32 @@ class Check_Network:
                 raise Exception("socks5 addr was wrong!!")
         else:
             self.socks5_addr = False
+
+        # 拆分 HTTP_PROXY 信息。
+        if HTTP_PROXY:
+            HTTP_PROXY_info = HTTP_PROXY.split(':')
+            if len(HTTP_PROXY_info) == 1:
+                self.http_proxy_addr = HTTP_PROXY_info[0]
+                self.http_proxy_port = 8080
+            elif len(HTTP_PROXY_info) == 2:
+                self.http_proxy_addr = HTTP_PROXY_info[0]
+                self.http_proxy_port = int(HTTP_PROXY_info[1])
+            else:
+                raise Exception('HTTP_Proxy addr was wrong!!')
+        else:
+            self.http_proxy_addr = False
+
+        # 拆分proxy user 信息。
+        if proxy_user:
+            PROXY_USER_info = proxy_user.split(':')
+            if len(PROXY_USER_info) == 2:
+                self.proxy_user = PROXY_USER_info[0]
+                self.proxy_password = PROXY_USER_info[1]
+            else:
+                raise Exception('Proxy authentication was wrong!! -> %s' % repr(proxy_user))
+        else:
+            self.proxy_user = None
+            self.proxy_password = None
 
     def __check_dns_resolve(self):
         for domain in self.__CHECK_DOMAIN_LIST:
@@ -71,11 +103,21 @@ class Check_Network:
         '''
         if self.socks5_addr and self.socks5_port:
             sock = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.set_proxy(socks.SOCKS5, self.socks5_addr, self.socks5_port)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            sock.set_proxy(socks.SOCKS5, self.socks5_addr, self.socks5_port,
+                           username = self.proxy_user, password = self.proxy_password)
             connect_timeout = 3
-            # 设置代理后，默认socket 连接超时时间加大为 3 秒。.
+            # 设置代理后，默认socket 连接超时时间加大为 3 秒。
+        elif self.http_proxy_addr and self.http_proxy_port:
+            sock = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            sock.set_proxy(socks.HTTP, self.http_proxy_addr, self.http_proxy_port,
+                           username = self.proxy_user, password = self.proxy_password)
+            connect_timeout = 3
+            # 设置代理后，默认 HTTP_PROXY 连接超时时间为 3 秒。
         else:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             connect_timeout = 1
         sock.settimeout(connect_timeout)
         ip_addr = self.to_ipaddr(host)
@@ -85,15 +127,19 @@ class Check_Network:
         start = time.time()
         try:
             sock.connect((ip, int(port)))
+            # blocking
             # 设置 socks5 代理过后，这里的connect 是连接到 socks5 地址，并不是连接到真是目标地址。
 
-            if self.socks5_addr and self.socks5_port:
+            if (self.socks5_addr and self.socks5_port) or (self.http_proxy_addr and self.http_proxy_port):
                 connect_end = time.time()
-                sock.sendall(b"\0")
-                sock.recv(4096).decode()
+                # 代理模式探测数据包
+                if port in [80, 443]:
+                    sock.sendall(b'GET / HTTP/1.1\r\nHost: %s\r\n\r\n' % host.encode())
+                else:
+                    sock.sendall(b"\0")
+                sock.recv(100)
                 end = time.time()
             else:
-                # blocking
                 end = time.time()
             # 取连接后的时间戳
             time_consuming = (end - start) * 1000
@@ -103,12 +149,30 @@ class Check_Network:
                 time.sleep(0.01 - time_consuming / 1000)
                 # 保持两次检测时间最小时间差为 10ms
             return self.STATUS_CODE_SUCCESS, time_consuming, 'ms', ip
-        except (socket.timeout, ConnectionRefusedError, socks.ProxyConnectionError) as err:
+        except (
+                socket.timeout,
+                ConnectionRefusedError,
+                socks.ProxyConnectionError,
+                socks.GeneralProxyError,
+                socks.HTTPError, socket.timeout
+                ) as err:
             time.sleep(0.01)
             if err.errno == 61 or err.errno == 113 or err.errno == 111:
                 return self.STATUS_CODE_CONNECT_REFUSED, err.strerror, None, ip
-            elif isinstance(err.socket_err, ConnectionRefusedError):
-                return self.STATUS_CODE_SOCKS5_CONNECT_REFUSED, "ProxyConnectionError", None, ip
+
+            elif 'socket_err' in dir(err) and isinstance(err.socket_err, ConnectionRefusedError):
+                # 两种代理模式，连接被重置
+                return self.STATUS_CODE_CONNECT_REFUSED, err.msg.strip(), None, ip
+
+            elif 'socket_err' in dir(err) and isinstance(err.socket_err, socks.HTTPError):
+                # 通过代理连接目标服务器，认证失败后，代理服务器告知认证失败
+                return self.STATUS_CODE_HTTP_PROXY_CONNECT_ERROR, err.msg.strip(), None, ip
+            elif isinstance(err, socks.GeneralProxyError) and \
+                    'socket_err' in dir(err) and \
+                    'msg' in dir(err.socket_err) and \
+                    err.socket_err.msg == "0x06: TTL expired":
+                # 通过代理连接目标服务器，认证失败后，被代理服务端主动断开连接
+                return self.STATUS_CODE_SOCKS5_CONNECT_REFUSED, "SOCKS5 Authenticate failure", None, ip
             else:
                 return self.STATUS_CODE_TCP_TIMEOUT, connect_timeout, None, ip
         finally:
@@ -158,7 +222,8 @@ class Check_Network:
                             pass
                         else:
                             print("%-5.1f %s" % (conn[1], conn[2]))
-                    elif (conn[0] == self.STATUS_CODE_CONNECT_REFUSED) or (conn[0] == self.STATUS_CODE_SOCKS5_CONNECT_REFUSED):
+                    elif conn[0] in [self.STATUS_CODE_CONNECT_REFUSED, self.STATUS_CODE_SOCKS5_CONNECT_REFUSED,
+                                     self.STATUS_CODE_HTTP_PROXY_CONNECT_ERROR]:
                         self.check_failure_count += 1
                         if self.verbose:
                             printRed('%-15s <- %s' % (conn[3], conn[1]))
@@ -198,7 +263,8 @@ class Check_Network:
                             pass
                         else:
                             print("%-5.1f %s" % (conn[1], conn[2]))
-                    elif (conn[0] == self.STATUS_CODE_CONNECT_REFUSED) or (conn[0] == self.STATUS_CODE_SOCKS5_CONNECT_REFUSED):
+                    elif conn[0] in [self.STATUS_CODE_CONNECT_REFUSED, self.STATUS_CODE_SOCKS5_CONNECT_REFUSED,
+                                     self.STATUS_CODE_HTTP_PROXY_CONNECT_ERROR]:
                         self.check_failure_count += 1
                         if self.verbose:
                             printRed('%-15s <- %s' % (conn[3], conn[1]))
@@ -222,6 +288,8 @@ class Check_Network:
                             pass
                         else:
                             print("timeout")
+        except Exception as err:
+            print(repr(err))
         finally:
                 self.get_footer_stats()
 
@@ -361,12 +429,19 @@ parser.add_argument("-c", '--count', action = 'store', type = int, default = 10,
 parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'more verbose message')
 parser.add_argument('-q', '--quiet', action = 'store_true', default = False, help = 'Silent or quiet mode.')
 parser.add_argument('-P', '--promise', action = 'store', type = int, default = 0, help = '保证结果返回的时间 seconds，设置此参数后 -c --count 将失效')
-parser.add_argument('--socks5', action = 'store', type = str, required = False, metavar = "address:port", default = False, help = 'set socks5 proxy address:port [default port 1080]')
-parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.4')
+parser.add_argument('--socks5', action = 'store', type = str, required = False, metavar = "<address:port>",
+                    default = False, help = 'set socks5 proxy address:port [default port 1080]')
+parser.add_argument('--proxy', action = 'store', type = str, required = False, metavar = "<HTTP_PROXY_address:port>",
+                    default = False, help = 'set HTTP Proxy address:port [default port 8080]')
+parser.add_argument('-U', '--proxy-user', action = 'store', type = str, required = False, metavar = "<user:password>",
+                    dest = 'proxy_user', default = False, help = 'Specify the user name and password to use for proxy authentication.')
+parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.5')
 args = parser.parse_args()
 
 if args.socks5:
-    instance = Check_Network(args.verbose, args.quiet, args.promise, args.socks5)
+    instance = Check_Network(args.verbose, args.quiet, args.promise, socks5 = args.socks5, proxy_user = args.proxy_user)
+elif args.proxy:
+    instance = Check_Network(args.verbose, args.quiet, args.promise, HTTP_PROXY = args.proxy, proxy_user = args.proxy_user)
 else:
     instance = Check_Network(args.verbose, args.quiet, args.promise)
 
