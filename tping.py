@@ -9,7 +9,7 @@ import threading
 import socks
 from math import trunc
 # author: Eric.Ren
-# version: 1.5
+# version: 1.5.1
 # prog: tping.exe
 
 class Check_Network:
@@ -288,6 +288,8 @@ class Check_Network:
                             pass
                         else:
                             print("timeout")
+        except KeyboardInterrupt:
+            pass
         except Exception as err:
             print(repr(err))
         finally:
@@ -435,7 +437,7 @@ parser.add_argument('--proxy', action = 'store', type = str, required = False, m
                     default = False, help = 'set HTTP Proxy address:port [default port 8080]')
 parser.add_argument('-U', '--proxy-user', action = 'store', type = str, required = False, metavar = "<user:password>",
                     dest = 'proxy_user', default = False, help = 'Specify the user name and password to use for proxy authentication.')
-parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.5')
+parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.5.1')
 args = parser.parse_args()
 
 if args.socks5:
