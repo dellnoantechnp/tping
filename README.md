@@ -1,6 +1,6 @@
 # tping
 tping 程序测试tcp握手往返延时。
-release version: 1.5
+release version: 1.5.1
 
 eg:
 ```
@@ -29,6 +29,8 @@ optional arguments:
   -U <user:password>, --proxy-user <user:password>
                         Specify the user name and password to use for proxy
                         authentication.
+  -4                    use IPv4 transport only [Default ipv4]
+  -6                    use IPv6 transport only
   -V, --version         show program's version number and exit
 
 

@@ -9,7 +9,7 @@ import threading
 import socks
 from math import trunc
 # author: Eric.Ren
-# version: 1.5.1
+# version: 1.5.2
 # prog: tping.exe
 
 class Check_Network:
@@ -25,8 +25,10 @@ class Check_Network:
     STATUS_CODE_PROMISE_TIMEOUT = 7
     __CHECK_DOMAIN_LIST = ['www.baidu.com', 'www.sina.com.cn', 'mirrors.aliyun.com']
 
-    def __init__(self, verbose, quiet = False, promise = False, socks5:str = False,
+    def __init__(self, verbose, family_IPv4 = True, quiet = False, promise = False, socks5:str = False,
                  HTTP_PROXY:str = False, proxy_user = None):
+        self.family = socket.AF_INET if family_IPv4 else socket.AF_INET6
+        # IP 协议栈版本, 默认 IPv4.
         self.verbose = verbose
         self.quiet = quiet
         self.promise = promise
@@ -103,21 +105,21 @@ class Check_Network:
         '''
         if self.socks5_addr and self.socks5_port:
             sock = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.set_proxy(socks.SOCKS5, self.socks5_addr, self.socks5_port,
                            username = self.proxy_user, password = self.proxy_password)
             connect_timeout = 3
             # 设置代理后，默认socket 连接超时时间加大为 3 秒。
         elif self.http_proxy_addr and self.http_proxy_port:
             sock = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.set_proxy(socks.HTTP, self.http_proxy_addr, self.http_proxy_port,
                            username = self.proxy_user, password = self.proxy_password)
             connect_timeout = 3
             # 设置代理后，默认 HTTP_PROXY 连接超时时间为 3 秒。
         else:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            sock = socket.socket(self.family, socket.SOCK_STREAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             connect_timeout = 1
         sock.settimeout(connect_timeout)
         ip_addr = self.to_ipaddr(host)
@@ -181,7 +183,7 @@ class Check_Network:
     def to_ipaddr(self, host):
         ipaddrs = set()
         try:
-            resolv = socket.getaddrinfo(host, None, family = socket.AF_INET, type = socket.SOCK_DGRAM)
+            resolv = socket.getaddrinfo(host, None, family = self.family, type = socket.SOCK_DGRAM)
         except socket.gaierror:
             #raise ValueError("--> %s <-- host syntax error." % repr(host))
             return self.STATUS_CODE_DOMAIN_VALUE_ERROR, "--> %s <-- host syntax error." % repr(host)
@@ -288,8 +290,6 @@ class Check_Network:
                             pass
                         else:
                             print("timeout")
-        except KeyboardInterrupt:
-            pass
         except Exception as err:
             print(repr(err))
         finally:
@@ -437,15 +437,20 @@ parser.add_argument('--proxy', action = 'store', type = str, required = False, m
                     default = False, help = 'set HTTP Proxy address:port [default port 8080]')
 parser.add_argument('-U', '--proxy-user', action = 'store', type = str, required = False, metavar = "<user:password>",
                     dest = 'proxy_user', default = False, help = 'Specify the user name and password to use for proxy authentication.')
-parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.5.1')
+parser.add_argument('-4', action = 'store_true', dest = 'family', default = True, help = 'use IPv4 transport only [Default ipv4]')
+parser.add_argument('-6', action = 'store_false', dest = 'family', default = False, help = 'use IPv6 transport only')
+parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.5.2')
 args = parser.parse_args()
 
 if args.socks5:
-    instance = Check_Network(args.verbose, args.quiet, args.promise, socks5 = args.socks5, proxy_user = args.proxy_user)
+    instance = Check_Network(verbose = args.verbose, family_IPv4 = args.family, quiet = args.quiet,
+                             promise = args.promise, socks5 = args.socks5, proxy_user = args.proxy_user)
 elif args.proxy:
-    instance = Check_Network(args.verbose, args.quiet, args.promise, HTTP_PROXY = args.proxy, proxy_user = args.proxy_user)
+    instance = Check_Network(verbose = args.verbose, family_IPv4 = args.family, quiet = args.quiet,
+                             promise = args.promise, HTTP_PROXY = args.proxy, proxy_user = args.proxy_user)
 else:
-    instance = Check_Network(args.verbose, args.quiet, args.promise)
+    instance = Check_Network(verbose = args.verbose, family_IPv4 = args.family, quiet = args.quiet,
+                             promise = args.promise)
 
 try:
     if args.promise:
@@ -457,5 +462,5 @@ try:
             # 修复 Promise 线程等待期间，由于 ctrl - C 造成的异常抛错问题。
             pass
     instance.get_tcp_status(host = args.destination, port = args.port, count = args.count)
-except Exception:
+except (Exception, KeyboardInterrupt):
     pass
