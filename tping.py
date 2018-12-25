@@ -427,7 +427,7 @@ class Check_Network:
 parser = argparse.ArgumentParser(prog = 'tping', description = "检测网络 tcp 连接有效性以及往返延时时间。")
 parser.add_argument("-d", "--destination", action = 'store', help = 'ip_addr. hostname. DomainName')
 parser.add_argument("-p", '--port', action = 'store', type = int, help = 'Port')
-parser.add_argument("-c", '--count', action = 'store', type = int, default = False, help = 'Check ping count')
+parser.add_argument("-c", '--count', action = 'store', type = int, default = 10, help = 'Check ping count')
 parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'more verbose message')
 parser.add_argument('-q', '--quiet', action = 'store_true', default = False, help = 'Silent or quiet mode.')
 parser.add_argument('-P', '--promise', action = 'store', type = int, default = 0, help = '保证结果返回的时间 seconds，设置此参数后 -c --count 将失效')
@@ -461,12 +461,11 @@ try:
         except KeyboardInterrupt:
             # 修复 Promise 线程等待期间，由于 ctrl - C 造成的异常抛错问题。
             pass
-    if args.count:
-        if args.count:
+        if args.count != 10:
             import sys
             sys.stderr.write('warning: you have specified the PROMISE option, COUNT option was invalid.\r\n')
-        instance.get_tcp_status(host = args.destination, port = args.port, count = args.count)
-    else:
         instance.get_tcp_status(host = args.destination, port = args.port)
+    else:
+        instance.get_tcp_status(host = args.destination, port = args.port, count = args.count)
 except (Exception, KeyboardInterrupt):
     pass
