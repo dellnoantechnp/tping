@@ -9,7 +9,7 @@ import threading
 import socks
 from math import trunc
 # author: Eric.Ren
-# version: 1.5.2
+# version: 1.5.3
 # prog: tping.exe
 
 class Check_Network:
@@ -427,7 +427,7 @@ class Check_Network:
 parser = argparse.ArgumentParser(prog = 'tping', description = "检测网络 tcp 连接有效性以及往返延时时间。")
 parser.add_argument("-d", "--destination", action = 'store', help = 'ip_addr. hostname. DomainName')
 parser.add_argument("-p", '--port', action = 'store', type = int, help = 'Port')
-parser.add_argument("-c", '--count', action = 'store', type = int, default = 10, help = 'Check ping count')
+parser.add_argument("-c", '--count', action = 'store', type = int, default = False, help = 'Check ping count')
 parser.add_argument('-v', '--verbose', action = 'store_true', default = False, help = 'more verbose message')
 parser.add_argument('-q', '--quiet', action = 'store_true', default = False, help = 'Silent or quiet mode.')
 parser.add_argument('-P', '--promise', action = 'store', type = int, default = 0, help = '保证结果返回的时间 seconds，设置此参数后 -c --count 将失效')
@@ -439,7 +439,7 @@ parser.add_argument('-U', '--proxy-user', action = 'store', type = str, required
                     dest = 'proxy_user', default = False, help = 'Specify the user name and password to use for proxy authentication.')
 parser.add_argument('-4', action = 'store_true', dest = 'family', default = True, help = 'use IPv4 transport only [Default ipv4]')
 parser.add_argument('-6', action = 'store_false', dest = 'family', default = False, help = 'use IPv6 transport only')
-parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.5.2')
+parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.5.3')
 args = parser.parse_args()
 
 if args.socks5:
@@ -461,6 +461,12 @@ try:
         except KeyboardInterrupt:
             # 修复 Promise 线程等待期间，由于 ctrl - C 造成的异常抛错问题。
             pass
-    instance.get_tcp_status(host = args.destination, port = args.port, count = args.count)
+    if args.count:
+        if args.count:
+            import sys
+            sys.stderr.write('warning: you have specified the PROMISE option, COUNT option was invalid.\r\n')
+        instance.get_tcp_status(host = args.destination, port = args.port, count = args.count)
+    else:
+        instance.get_tcp_status(host = args.destination, port = args.port)
 except (Exception, KeyboardInterrupt):
     pass
