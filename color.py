@@ -1,3 +1,5 @@
+# version: python 3.x
+
 import platform
 if 'Windows' in platform.system():
     import sys
@@ -48,13 +50,13 @@ else:
         return '%s%s%s' % (style, msg, end)
 
     def printRed(msg):
-        print(UseStyle(msg,fore='red'))
+        print(UseStyle(msg,fore='red'), flush = True)
 
     def printGreen(msg):
-        print(UseStyle(msg,fore='green'))
+        print(UseStyle(msg,fore='green'), flush = True)
 
     def printYellow(msg):
-        print(UseStyle(msg,fore='yellow'))
+        print(UseStyle(msg,fore='yellow'), flush = True)
 
     def printBlue(msg):
-        print(UseStyle(msg,fore='blue'))
+        print(UseStyle(msg,fore='blue'), flush = True)

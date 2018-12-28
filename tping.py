@@ -1,4 +1,4 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 import subprocess
 import time
 import socket
@@ -7,9 +7,10 @@ import argparse
 from color import *
 import threading
 import socks
+import sys
 from math import trunc
 # author: Eric.Ren
-# version: 1.5.3
+# version: 1.5.4
 # prog: tping.exe
 
 class Check_Network:
@@ -223,7 +224,7 @@ class Check_Network:
                         elif self.quiet:
                             pass
                         else:
-                            print("%-5.1f %s" % (conn[1], conn[2]))
+                            print("%-5.1f %s" % (conn[1], conn[2]), flush = True)
                     elif conn[0] in [self.STATUS_CODE_CONNECT_REFUSED, self.STATUS_CODE_SOCKS5_CONNECT_REFUSED,
                                      self.STATUS_CODE_HTTP_PROXY_CONNECT_ERROR]:
                         self.check_failure_count += 1
@@ -232,7 +233,7 @@ class Check_Network:
                         elif self.quiet:
                             pass
                         else:
-                            print(conn[1])
+                            print(conn[1], flush = True)
                     elif conn[0] == self.STATUS_CODE_DOMAIN_VALUE_ERROR:
                         self.check_failure_count += 1
                         if self.verbose:
@@ -240,7 +241,7 @@ class Check_Network:
                         elif self.quiet:
                             pass
                         else:
-                            print("invalid destination")
+                            print("invalid destination", flush = True)
                     else:
                         self.check_failure_count += 1
                         if self.verbose:
@@ -248,7 +249,7 @@ class Check_Network:
                         elif self.quiet:
                             pass
                         else:
-                            print("timeout")
+                            print("timeout", flush = True)
             else:
                 while count > 0:
                     count -= 1
@@ -264,7 +265,7 @@ class Check_Network:
                         elif self.quiet:
                             pass
                         else:
-                            print("%-5.1f %s" % (conn[1], conn[2]))
+                            print("%-5.1f %s" % (conn[1], conn[2]), flush = True)
                     elif conn[0] in [self.STATUS_CODE_CONNECT_REFUSED, self.STATUS_CODE_SOCKS5_CONNECT_REFUSED,
                                      self.STATUS_CODE_HTTP_PROXY_CONNECT_ERROR]:
                         self.check_failure_count += 1
@@ -273,7 +274,7 @@ class Check_Network:
                         elif self.quiet:
                             pass
                         else:
-                            print(conn[1])
+                            print(conn[1], flush = True)
                     elif conn[0] == self.STATUS_CODE_DOMAIN_VALUE_ERROR:
                         self.check_failure_count += 1
                         if self.verbose:
@@ -281,7 +282,7 @@ class Check_Network:
                         elif self.quiet:
                             pass
                         else:
-                            print("invalid destination")
+                            print("invalid destination", flush = True)
                     else:
                         self.check_failure_count += 1
                         if self.verbose:
@@ -289,11 +290,11 @@ class Check_Network:
                         elif self.quiet:
                             pass
                         else:
-                            print("timeout")
+                            print("timeout", flush = True)
         except Exception as err:
-            print(repr(err))
+            print(repr(err), flush = True)
         finally:
-                self.get_footer_stats()
+            self.get_footer_stats()
 
     def get_footer_stats(self):
         try:
@@ -312,7 +313,7 @@ class Check_Network:
                 self.check_failure_count / self.check_count,
                 avg_ms
             )
-            print(footer)
+            print(footer, file = sys.stderr, flush = True)
             if self.check_success_count / self.check_count == 0:
                 # 如果一个都没有成功，则返回状态码 1.
                 exit(1)
@@ -321,7 +322,8 @@ class Check_Network:
                 exit(trunc(self.check_success_count / self.check_count * 100))
             else:
                 # 全部成功，退出状态码 0。
-                exit(0)
+                #exit(0)
+                pass
         except Exception:
             # 指定 Exception 不捕获 exit 退出异常动作。
             pass
@@ -439,7 +441,7 @@ parser.add_argument('-U', '--proxy-user', action = 'store', type = str, required
                     dest = 'proxy_user', default = False, help = 'Specify the user name and password to use for proxy authentication.')
 parser.add_argument('-4', action = 'store_true', dest = 'family', default = True, help = 'use IPv4 transport only [Default ipv4]')
 parser.add_argument('-6', action = 'store_false', dest = 'family', default = False, help = 'use IPv6 transport only')
-parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.5.3')
+parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s v1.5.4')
 args = parser.parse_args()
 
 if args.socks5:
@@ -462,8 +464,7 @@ try:
             # 修复 Promise 线程等待期间，由于 ctrl - C 造成的异常抛错问题。
             pass
         if args.count != 10:
-            import sys
-            sys.stderr.write('warning: you have specified the PROMISE option, COUNT option was invalid.\r\n')
+            print('warning: you have specified the PROMISE option, COUNT option was invalid.', file = sys.stderr)
         instance.get_tcp_status(host = args.destination, port = args.port)
     else:
         instance.get_tcp_status(host = args.destination, port = args.port, count = args.count)
