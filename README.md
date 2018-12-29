@@ -60,6 +60,18 @@ total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 210.92 m
 54.192.138.90   < 211.5 ms
 total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 210.63 ms
 
+# python3 tping.py -d www.amazon.com -p 443 -c 3 -vv
+54.192.150.165:443   <- 10.7.97.1:42020  112.6 ms
+54.192.150.165:443   <- 10.7.97.1:42034  106.3 ms
+54.192.150.165:443   <- 10.7.97.1:42048  101.2 ms
+total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 106.71 ms
+
+# python3 tping.py -d www.amazon.com -p 443 -c 3 -vvv
+[2018-12-20 16:21:43.423170]    54.192.150.165:443   <- 10.7.97.1:42580  112.6 ms
+[2018-12-20 16:21:43.537178]    54.192.150.165:443   <- 10.7.97.1:42584  101.5 ms
+[2018-12-20 16:21:43.639743]    54.192.150.165:443   <- 10.7.97.1:42592  104.2 ms
+total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 106.09 ms
+
 # python3 tping.py -d www.amazon.com -p 443 -c 3
 211.7 ms
 210.7 ms
