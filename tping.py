@@ -15,7 +15,7 @@ except:
     exit(130)
 # author: Eric.Ren
 # prog: tping.exe
-version = "1.6.1"
+__version__ = "1.6.4"
 
 
 class Check_Network:
@@ -32,13 +32,15 @@ class Check_Network:
     __CHECK_DOMAIN_LIST = ['www.baidu.com', 'www.sina.com.cn', 'mirrors.aliyun.com']
 
     def __init__(self, verbose, family_IPv4 = True, quiet = False, promise = False, socks5:str = False,
-                 HTTP_PROXY:str = False, proxy_user = None):
+                 HTTP_PROXY:str = False, proxy_user = None, laddr = '', lport = 0):
         self.family = socket.AF_INET if family_IPv4 else socket.AF_INET6
         # IP 协议栈版本, 默认 IPv4.
         self.verbose = verbose
         self.quiet = quiet
         self.promise = promise
         # 拆分 socks5 proxy 信息。
+        self.laddr = laddr
+        self.lport = lport
         if socks5:
             socks5_info = socks5.split(":")
             if len(socks5_info) == 1:
@@ -127,18 +129,36 @@ class Check_Network:
             sock = socket.socket(self.family, socket.SOCK_STREAM)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             connect_timeout = 2
+
+        try:
+            sock.bind((self.laddr, self.lport))
+        except OSError as err:
+            if err.strerror == 'Address already in use':
+                print('Address or port already in use')
+            elif err.strerror == 'Cannot assign requested address':
+                print('-> %s <- laddr was wrong!' % self.laddr)
+            exit(10)
+        except (OverflowError, TypeError):
+            print('-> %s <- lport was wrong!' % self.lport)
+            exit(10)
+
         sock.settimeout(connect_timeout)
         ip_addr = self.to_ipaddr(host)
         if ip_addr[0] != self.STATUS_CODE_SUCCESS:
             return ip_addr
         dest_ip = random.sample(ip_addr[1], 1)[0]
+
         start = time.time()
         try:
             sock.connect((dest_ip, int(port)))
             # blocking
             # 设置 socks5 代理过后，这里的connect 是连接到 socks5 地址，并不是连接到真是目标地址。
 
-            local_sock_ip, local_sock_port = sock.getsockname()
+            if self.family == socket.AF_INET6:          # IPv6 getsockname() return 4 item tuple
+                local_sock_ip, local_sock_port, *other = sock.getsockname()
+            else:
+                local_sock_ip, local_sock_port = sock.getsockname()
+
             if (self.socks5_addr and self.socks5_port) or (self.http_proxy_addr and self.http_proxy_port):
                 connect_end = time.time()
                 # 代理模式探测数据包
@@ -167,8 +187,12 @@ class Check_Network:
                 socks.HTTPError, socket.timeout
                 ) as err:
             time.sleep(0.01)
+
             # connect 方法报错，让然获取该 socket 的 laddr 信息。
-            local_sock_ip, local_sock_port = sock.getsockname()
+            if self.family == socket.AF_INET6:          # IPv6 getsockname() return 4 item tuple
+                local_sock_ip, local_sock_port, *other = sock.getsockname()
+            else:
+                local_sock_ip, local_sock_port = sock.getsockname()
 
             if err.errno == 61 or err.errno == 113 or err.errno == 111:
                 return self.STATUS_CODE_CONNECT_REFUSED, err.strerror, None, dest_ip, \
@@ -200,7 +224,11 @@ class Check_Network:
             sock.close()
 
     def to_ipaddr(self, host):
-        ipaddrs = set()
+        if hasattr(self, "ipaddrs"):
+            # 一次解析，多次使用
+            return self.STATUS_CODE_SUCCESS, self.ipaddrs
+        else:
+            ipaddrs = set()
         try:
             # getaddrinfo query all sock_type address.
             resolv = socket.getaddrinfo(host, None, 0, socket.SOCK_STREAM, 0, socket.AI_ADDRCONFIG)
@@ -209,7 +237,11 @@ class Check_Network:
         else:
             for item in resolv:
                if item[0] == self.family: ipaddrs.add(item[-1][0])
-            return self.STATUS_CODE_SUCCESS, tuple(ipaddrs)
+            if len(ipaddrs) > 0:
+                self.ipaddrs = tuple(ipaddrs)
+                return self.STATUS_CODE_SUCCESS, tuple(ipaddrs)
+            else:
+                return self.STATUS_CODE_DOMAIN_VALUE_ERROR, "--> %s <-- host or address not resolved." % host
 
     def to_ipaddr_use_socks5(self, host):
         pass
@@ -239,11 +271,11 @@ class Check_Network:
                                (conn[3], conn[1], conn[2]))
                 elif self.verbose == 2:
                     # add client ip:port
-                    printGreen('%-20s <- %s:%i  %-5.1f %s' %
+                    printGreen('%-20s <- %s:%i\t%-5.1f %s' %
                                (conn[3] + ":" + str(conn[4]), conn[5], conn[6], conn[1], conn[2]))
                 elif self.verbose >= 3:
                     # add ISO time
-                    printGreen('[%s]\t%-20s <- %s:%i  %-5.1f %s' %
+                    printGreen('[%s]\t%-20s <- %s:%i\t%-5.1f %s' %
                                (conn[7], conn[3] + ":" + str(conn[4]), conn[5], conn[6], conn[1], conn[2]))
                 elif self.quiet:
                     pass
@@ -450,18 +482,23 @@ parser.add_argument('-U', '--proxy-user', action = 'store', type = str, required
                     dest = 'proxy_user', default = False, help = 'Specify the user name and password to use for proxy authentication.')
 parser.add_argument('-4', action = 'store_true', dest = 'family', default = True, help = 'use IPv4 transport only [Default ipv4]')
 parser.add_argument('-6', action = 'store_false', dest = 'family', default = False, help = 'use IPv6 transport only')
-parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s {}'.format(version))
+parser.add_argument('--laddr', action = 'store', type = str, default = '', help = 'Source address use, default local Main IP.')
+parser.add_argument('--lport', action = 'store', type = int, default = 0,
+                    help = 'Source port use, default System allocation. <unrecommended!>')
+parser.add_argument('-V', '--version', action = 'version', version = '%(prog)s {}'.format(__version__))
 args = parser.parse_args()
 
 if args.socks5:
     instance = Check_Network(verbose = args.verbose, family_IPv4 = args.family, quiet = args.quiet,
-                             promise = args.promise, socks5 = args.socks5, proxy_user = args.proxy_user)
+                             promise = args.promise, socks5 = args.socks5, proxy_user = args.proxy_user,
+                             laddr = args.laddr, lport = args.lport)
 elif args.proxy:
     instance = Check_Network(verbose = args.verbose, family_IPv4 = args.family, quiet = args.quiet,
-                             promise = args.promise, HTTP_PROXY = args.proxy, proxy_user = args.proxy_user)
+                             promise = args.promise, HTTP_PROXY = args.proxy, proxy_user = args.proxy_user,
+                             laddr = args.laddr, lport = args.lport)
 else:
     instance = Check_Network(verbose = args.verbose, family_IPv4 = args.family, quiet = args.quiet,
-                             promise = args.promise)
+                             promise = args.promise, laddr = args.laddr, lport = args.lport)
 
 try:
     if args.promise:
