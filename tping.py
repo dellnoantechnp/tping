@@ -11,11 +11,12 @@ try:
     import sys
     from datetime import datetime
     from math import trunc
+    #import traceback
 except:
     exit(130)
 # author: Eric.Ren
 # prog: tping.exe
-__version__ = "1.6.4"
+__version__ = "1.6.6"
 
 
 class Check_Network:
@@ -128,8 +129,7 @@ class Check_Network:
         else:
             sock = socket.socket(self.family, socket.SOCK_STREAM)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            connect_timeout = 2
-
+            connect_timeout = 3
         try:
             sock.bind((self.laddr, self.lport))
         except OSError as err:
@@ -153,6 +153,7 @@ class Check_Network:
             sock.connect((dest_ip, int(port)))
             # blocking
             # 设置 socks5 代理过后，这里的connect 是连接到 socks5 地址，并不是连接到真是目标地址。
+
 
             if self.family == socket.AF_INET6:          # IPv6 getsockname() return 4 item tuple
                 local_sock_ip, local_sock_port, *other = sock.getsockname()
@@ -186,13 +187,23 @@ class Check_Network:
                 socks.GeneralProxyError,
                 socks.HTTPError, socket.timeout
                 ) as err:
+            # traceback.print_exc()
             time.sleep(0.01)
 
             # connect 方法报错，让然获取该 socket 的 laddr 信息。
             if self.family == socket.AF_INET6:          # IPv6 getsockname() return 4 item tuple
                 local_sock_ip, local_sock_port, *other = sock.getsockname()
             else:
-                local_sock_ip, local_sock_port = sock.getsockname()
+                # import traceback
+                # print(err)
+                # print(dir(err))
+                # traceback.print_tb(sys.exc_info()[2])
+                if (self.socks5_addr and self.socks5_port) or (self.http_proxy_addr and self.http_proxy_port) and \
+                        isinstance(err, socks.ProxyConnectionError):
+                    local_sock_ip = "0.0.0.0"
+                    local_sock_port = 0
+                else:
+                    local_sock_ip, local_sock_port = sock.getsockname()
 
             if err.errno == 61 or err.errno == 113 or err.errno == 111:
                 return self.STATUS_CODE_CONNECT_REFUSED, err.strerror, None, dest_ip, \
@@ -212,10 +223,11 @@ class Check_Network:
                     'msg' in dir(err.socket_err) and \
                     err.socket_err.msg == "0x06: TTL expired":
                 # 通过代理连接目标服务器，认证失败后，被代理服务端主动断开连接
+
                 return self.STATUS_CODE_SOCKS5_CONNECT_REFUSED, "SOCKS5 Authenticate failure", None, dest_ip, \
                        int(port), local_sock_ip, local_sock_port, datetime.fromtimestamp(start)
             else:
-                return self.STATUS_CODE_TCP_TIMEOUT, connect_timeout, None, dest_ip, \
+                return self.STATUS_CODE_TCP_TIMEOUT, connect_timeout, "ms", dest_ip, \
                        int(port), local_sock_ip, local_sock_port, datetime.fromtimestamp(start)
         except OSError as err:
             print(dest_ip, err.strerror)
@@ -313,7 +325,7 @@ class Check_Network:
                 elif self.verbose == 2:
                     # add client ip:port
                     printRed('%-20s <- %s:%i  timeout' %
-                             (conn[3] + ":" + str(conn[4]), conn[5], conn[6], conn[1], conn[2]))
+                             (conn[3] + ":" + str(conn[4]), conn[5], conn[6]))
                 elif self.verbose >= 3:
                     # add ISO time
                     printRed('[%s]\t%-20s <- %s:%i  timeout' %
@@ -333,7 +345,10 @@ class Check_Network:
                     count -= 1
                     _print_ms()
         except Exception as err:
+            # print(dir(err))
+            # traceback.print_exc()
             print(repr(err), flush = True)
+            print(1)
         finally:
             self.get_footer_stats()
 
