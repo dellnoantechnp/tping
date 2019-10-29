@@ -16,7 +16,7 @@ except:
     exit(130)
 # author: Eric.Ren
 # prog: tping.exe
-__version__ = "1.6.6"
+__version__ = "1.6.7"
 
 
 class Check_Network:
@@ -231,7 +231,7 @@ class Check_Network:
                        int(port), local_sock_ip, local_sock_port, datetime.fromtimestamp(start)
         except OSError as err:
             print(dest_ip, err.strerror)
-            exit(126)
+            raise SystemExit(126)
         finally:
             sock.close()
 
@@ -348,7 +348,6 @@ class Check_Network:
             # print(dir(err))
             # traceback.print_exc()
             print(repr(err), flush = True)
-            print(1)
         finally:
             self.get_footer_stats()
 
