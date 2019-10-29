@@ -1,6 +1,6 @@
 # tping
 tping 程序测试网络连通性以及tcp往返延时。
-release version: 1.6.4
+release version: 1.6.7
 
 eg:
 ```
