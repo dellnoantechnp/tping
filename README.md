@@ -1,6 +1,6 @@
 # tping
 tping 程序测试网络连通性以及tcp往返延时。
-release version: 1.6.7
+release version: 1.8
 
 eg:
 ```
@@ -35,95 +35,95 @@ optional arguments:
 
 
 # ./tping -d www.amazon.com -p 443
-213.4 ms
-211.5 ms
-207.6 ms
-210.1 ms
-212.1 ms
-212.6 ms
-210.0 ms
-213.0 ms
-211.1 ms
-207.8 ms
-total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 210.92 ms
+239.8 ms
+239.4 ms
+243.2 ms
+481.4 ms
+234.9 ms
+236.1 ms
+1239.6 ms
+232.1 ms
+241.4 ms
+235.6 ms
+total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 210.92 ms   p50: 239.58 p90: 860.50 p99: 1239.62
 ```
 
 #### Detail information
 ```
 # ./tping -d www.amazon.com -p 443 -v
-54.192.138.90   < 212.4 ms
-54.192.138.90   < 211.4 ms
-54.192.138.90   < 209.5 ms
-54.192.138.90   < 213.4 ms
-54.192.138.90   < 207.5 ms
-54.192.138.90   < 209.4 ms
-54.192.138.90   < 210.6 ms
-54.192.138.90   < 210.8 ms
-54.192.138.90   < 209.9 ms
-54.192.138.90   < 211.5 ms
-total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 210.63 ms
+99.84.198.32    <- 190.9 ms
+99.84.198.32    <- 195.0 ms
+99.84.198.32    <- 198.1 ms
+99.84.198.32    <- 198.7 ms
+99.84.198.32    <- 1194.1 ms
+99.84.198.32    <- 197.2 ms
+99.84.198.32    <- 199.2 ms
+99.84.198.32    <- 199.4 ms
+99.84.198.32    <- 192.8 ms
+99.84.198.32    <- 190.0 ms
+total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 295.53 ms p50: 197.62 p90: 696.76 p99: 1194.08
 
-# ./tping -d www.amazon.com -p 443 -c 3 -vv
-54.192.150.165:443   <- 10.7.97.1:42020  112.6 ms
-54.192.150.165:443   <- 10.7.97.1:42034  106.3 ms
-54.192.150.165:443   <- 10.7.97.1:42048  101.2 ms
-total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 106.71 ms
+# ./tping -d www.amazon.com -p 443 --count 3 -vv
+[2020-12-11 12:31:32.967200]  99.84.198.32:443     <- 172.17.20.21:6209 199.5 ms
+[2020-12-11 12:31:33.167248]  99.84.198.32:443     <- 172.17.20.21:18812  194.3 ms
+[2020-12-11 12:31:33.361985]  99.84.198.32:443     <- 172.17.20.21:7677 1192.0 ms
+total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 528.62 ms p50: 199.50 p90: 1192.00 p99: 1192.00
 
-# tping.exe -d www.amazon.com -p 443 -c 3 -vvv
-[2018-12-20 16:21:43.423170]    54.192.150.165:443   <- 10.7.97.1:42580  112.6 ms
-[2018-12-20 16:21:43.537178]    54.192.150.165:443   <- 10.7.97.1:42584  101.5 ms
-[2018-12-20 16:21:43.639743]    54.192.150.165:443   <- 10.7.97.1:42592  104.2 ms
-total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 106.09 ms
+# tping.exe -d www.amazon.com -p 443 --count 3 -vvv
+[2020-12-11 12:31:32.967200]  99.84.198.32:443     <- 172.17.20.21:6209 199.5 ms
+[2020-12-11 12:31:33.167248]  99.84.198.32:443     <- 172.17.20.21:18812  194.3 ms
+[2020-12-11 12:31:33.361985]  99.84.198.32:443     <- 172.17.20.21:7677 1192.0 ms
+total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 528.62 ms p50: 199.50 p90: 1192.00 p99: 1192.00
 
 ```
 #### count 3
 ```
 # ./tping -d www.amazon.com -p 443 -c 3
-211.7 ms
-210.7 ms
-212.3 ms
-total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 211.57 ms
+201.8 ms
+205.8 ms
+202.8 ms
+total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 203.50 ms p50: 202.84 p90: 205.84 p99: 205.84
 ```
 
 #### use socks5 proxy
 ```
 # ./tping --socks5 127.0.0.1 -d www.amazon.com -p 443 -c 3
-221.1 ms
-219.7 ms
-232.5 ms
-total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 223.53 ms
+201.8 ms
+205.8 ms
+202.8 ms
+total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 203.50 ms p50: 202.84 p90: 205.84 p99: 205.84
 ```
 
 #### use socks5 Authentication
 ```
 # ./tping --socks5 x.x.x.x:1080 -U foo:bar -d www.baidu.com -p 443
-434.6 ms
-428.0 ms
-421.5 ms
-456.2 ms
-416.3 ms
-457.9 ms
-459.1 ms
-424.9 ms
-423.6 ms
-424.5 ms
-total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 434.67 ms
+239.8 ms
+239.4 ms
+243.2 ms
+481.4 ms
+234.9 ms
+236.1 ms
+1239.6 ms
+232.1 ms
+241.4 ms
+235.6 ms
+total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 210.92 ms   p50: 239.58 p90: 860.50 p99: 1239.62
 ```
 
 #### use HTTP_PROXY
 ```
 # ./tping --proxy x.x.x.x:8080 --proxy-user foo:bar -d www.baidu.com -p 443
-305.3 ms
-305.7 ms
-296.2 ms
-298.4 ms
-291.9 ms
-335.1 ms
-294.4 ms
-308.9 ms
-295.1 ms
-266.5 ms
-total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 299.77 ms
+239.8 ms
+239.4 ms
+243.2 ms
+481.4 ms
+234.9 ms
+236.1 ms
+1239.6 ms
+232.1 ms
+241.4 ms
+235.6 ms
+total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 210.92 ms   p50: 239.58 p90: 860.50 p99: 1239.62
 
 # ./tping --proxy x.x.x.x:8081 -U user:wrong_pass -d www.baidu.com -p 443 -c 4
 Socket error: 407: Proxy Authentication Required
@@ -172,5 +172,5 @@ total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 202.29 m
 
 > tping.exe -d www.amazon.com -p 80  -c 1 -v
 13.35.122.164   < 187.5 ms
-total: 1  success: 1  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 187.50 ms
+total: 1  success: 1  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 187.50 ms   p50: 187.5 p90: 187.5 p99: 187.5
 ```
