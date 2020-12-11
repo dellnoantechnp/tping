@@ -18,7 +18,7 @@ except:
     exit(130)
 # author: Eric.Ren
 # prog: tping.exe
-__version__="1.8"
+__version__="1.8.1"
 
 try:
     from tdigest import TDigest
@@ -537,13 +537,13 @@ class Check_Network:
         return resp
 
 parser=argparse.ArgumentParser(prog='tping', description="Detect network tcp connection validity and packet delay time.")
-parser.add_argument("-d", "--destination", action='store', help='ip_addr. hostname. DomainName')
-parser.add_argument("-p", '--port', action='store', type=str, default='', help='tcp port number, or multiport number\nEx: 80  80,443  1-65535')
+parser.add_argument("-d", "--destination", action='store', help='ip_addr|hostname|DomainName')
+parser.add_argument("-p", '--port', action='store', type=str, default='', help='tcp port number, or multiport number\nEx: 80|80,443|1-65535')
 parser.add_argument("-c", '--count', action='store', type=int, default=10, help='Check ping count')
-parser.add_argument('-v', '--verbose', action='count', default=0, help='more verbose message, [-v -vv]')
+parser.add_argument('-v', '--verbose', action='count', default=0, help='more verbose message, [-v|-vv|-vvv]')
 parser.add_argument('-q', '--quiet', action='store_true', default=False, help='Silent or quiet mode.')
 parser.add_argument('-t', '--timeout', action='store', type=int, default=3, help='Connection timeout seconds. [default timeout 3s]')
-parser.add_argument('-P', '--promise', action='store', type=int, default=0, help='保证结果返回的时间 seconds，设置此参数后 -c --count 将失效')
+parser.add_argument('-P', '--promise', action='store', type=int, default=0, help='保证结果返回的时间 seconds，设置此参数后 -c|--count 将失效')
 parser.add_argument('--socks5', action='store', type=str, required=False, metavar="<address:port>",
                     default=False, help='set socks5 proxy address:port [default port 1080]')
 parser.add_argument('--proxy', action='store', type=str, required=False, metavar="<HTTP_PROXY_address:port>",

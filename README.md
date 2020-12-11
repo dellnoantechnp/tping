@@ -1,27 +1,31 @@
 # tping
 tping 程序测试网络连通性以及tcp往返延时。
-release version: 1.8
+release version: 1.8.1
 
 eg:
 ```
 # ./tping -h
-usage: tping [-h] [-d DESTINATION] [-p PORT] [-c COUNT] [-v] [-q] [-P PROMISE]
-             [--socks5 <address:port>] [--proxy <HTTP_PROXY_address:port>]
-             [-U <user:password>] [-4] [-6] [-V]
+usage: tping [-h] [-d DESTINATION] [-p PORT] [-c COUNT] [-v] [-q] [-t TIMEOUT]
+             [-P PROMISE] [--socks5 <address:port>]
+             [--proxy <HTTP_PROXY_address:port>] [-U <user:password>] [-4]
+             [-6] [--laddr LADDR] [--lport LPORT] [-V]
 
 Detect network tcp connection validity and packet delay time.
 
 optional arguments:
   -h, --help            show this help message and exit
   -d DESTINATION, --destination DESTINATION
-                        ip_addr. hostname. DomainName
-  -p PORT, --port PORT  Port
+                        ip_addr|hostname|DomainName
+  -p PORT, --port PORT  tcp port number, or multiport number Ex:
+                        80|80,443|1-65535
   -c COUNT, --count COUNT
                         Check ping count
-  -v, --verbose         more verbose message, [-v -vv]
+  -v, --verbose         more verbose message, [-v|-vv|-vvv]
   -q, --quiet           Silent or quiet mode.
+  -t TIMEOUT, --timeout TIMEOUT
+                        Connection timeout seconds. [default timeout 3s]
   -P PROMISE, --promise PROMISE
-                        保证结果返回的时间 seconds，设置此参数后 -c --count 将失效
+                        保证结果返回的时间 seconds，设置此参数后 -c|--count 将失效
   --socks5 <address:port>
                         set socks5 proxy address:port [default port 1080]
   --proxy <HTTP_PROXY_address:port>
@@ -31,9 +35,14 @@ optional arguments:
                         authentication.
   -4                    use IPv4 transport only [Default ipv4]
   -6                    use IPv6 transport only
+  --laddr LADDR         Source address use, default local Main IP.
+  --lport LPORT         Source port use, default System allocation.
+                        <unrecommended!>
   -V, --version         show program's version number and exit
+```
 
-
+#### Normal Connect RTT Test
+```
 # ./tping -d www.amazon.com -p 443
 239.8 ms
 239.4 ms
@@ -76,6 +85,23 @@ total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 528.62 ms 
 total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 528.62 ms p50: 199.50 p90: 1192.00 p99: 1192.00
 
 ```
+
+#### Multiport Test
+```shell
+./tping -d www.bestbuy.com -p 80,443 -vv
+23.44.52.214:443     <- 172.17.20.21:27849  95.0  ms
+23.44.52.214:80      <- 172.17.20.21:2127 1093.8 ms
+23.44.52.214:443     <- 172.17.20.21:22335  1091.3 ms
+23.44.52.214:443     <- 172.17.20.21:10730  1089.2 ms
+23.44.52.214:80      <- 172.17.20.21:13862  83.8  ms
+23.44.52.214:443     <- 172.17.20.21:29566  1089.0 ms
+23.44.52.214:443     <- 172.17.20.21:2968 90.1  ms
+23.44.52.214:443     <- 172.17.20.21:9972 90.1  ms
+23.44.52.214:80      <- 172.17.20.21:19536  89.8  ms
+23.44.52.214:443     <- 172.17.20.21:15409  95.5  ms
+total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 490.76 ms p50: 95.28 p90: 1092.58 p99: 1093.83
+```
+
 #### count 3
 ```
 # ./tping -d www.amazon.com -p 443 -c 3
