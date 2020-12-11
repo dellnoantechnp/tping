@@ -1,6 +1,8 @@
 # tping
+A simple tcp RTT test program by Python.
 tping 程序测试网络连通性以及tcp往返延时。
-release version: 1.8.1
+
+release version: 1.8.2
 
 eg:
 ```
