@@ -14,7 +14,7 @@ $ python3 tping.py -d www.amazon.com -p 443
 ```
 
 ## Binary version download
-Into `Release` page, download Linux/Windows version.
+Into `Releases` page, download Linux/Windows version.
 ```shell
 ./tping -h
 ```
