@@ -4,6 +4,21 @@ tping 程序测试网络连通性以及tcp往返延时。
 
 release version: 1.8.2
 
+## Python version Install
+```shell
+$ git clone https://github.com/dellnoantechnp/tping.git
+$ cd tping
+$ sudo pip install -r requirements.txt
+$ python3 tping.py -d www.amazon.com -p 443
+.....
+```
+
+## Binary version download
+Into `Release` page, download Linux/Windows version.
+```shell
+./tping -h
+```
+
 eg:
 ```
 # ./tping -h
