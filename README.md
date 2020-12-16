@@ -19,6 +19,7 @@ Into `Release` page, download Linux/Windows version.
 ./tping -h
 ```
 
+## Usage：
 eg:
 ```
 # ./tping -h
