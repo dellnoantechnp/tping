@@ -10,13 +10,12 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-
+    name: Build Docker image
+    environment: 
+      TAG=$(date +%s)
     steps:
-    - name: set tag seconds
-      run: |
-        echo "TAG=$(date +%s)" >> $GITHUB_ENV
     - name: output env.TAG
-      run: echo ${{env.TAG}}
+      run: echo ${{environment.TAG}}
     - name: Check out the repo
       uses: actions/checkout@v2
     - name: Build the Docker image
