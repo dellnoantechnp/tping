@@ -14,13 +14,13 @@ jobs:
     environment: TAG=$(date +%s)
     steps:
     - name: output env.TAG
-      run: echo $environment.TAG
+      run: echo ${TAG}
     - name: Check out the repo
       uses: actions/checkout@v2
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_HUB_REPOSITORY }}:${{env.TAG}}
+      run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_HUB_REPOSITORY }}:${TAG}
     - name: Unit Test
-      run: docker run --name unit_test ${{ secrets.DOCKER_HUB_REPOSITORY }}:${{env.TAG}} -d www.google.com -p 443 -vvv 
+      run: docker run --name unit_test ${{ secrets.DOCKER_HUB_REPOSITORY }}:${TAG} -d www.google.com -p 443 -vvv 
     - name: rm test job
       run: docker rm unit_test
     - name: Push to Docker Hub
