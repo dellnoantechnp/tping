@@ -11,8 +11,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build Docker image
-    environment: 
-      TAG=$(date +%s)
+    environment: TAG=$(date +%s)
     steps:
     - name: output env.TAG
       run: echo ${{environment.TAG}}
