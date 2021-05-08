@@ -10,19 +10,24 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    name: Build Docker image
-    environment: TAG=$(date +%s)
+    name: Build Docker Image
     steps:
+    - name: set tag seconds
+      run: |
+        echo "TAG=$(date +%s)" >> $GITHUB_ENV
+        
     - name: output env.TAG
-      run: echo ${TAG}
+      run: echo ${{env.TAG}}
+      
     - name: Check out the repo
       uses: actions/checkout@v2
+      
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_HUB_REPOSITORY }}:${TAG}
+      run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_HUB_REPOSITORY }}:${{env.TAG}}
+      
     - name: Unit Test
-      run: docker run --name unit_test ${{ secrets.DOCKER_HUB_REPOSITORY }}:${TAG} -d www.google.com -p 443 -vvv 
-    - name: rm test job
-      run: docker rm unit_test
+      run: docker run --name unit_test --rm ${{ secrets.DOCKER_HUB_REPOSITORY }}:${{env.TAG}} -d www.google.com -p 443 -vvv
+      
     - name: Push to Docker Hub
       uses: docker/build-push-action@v1
       with:
@@ -30,4 +35,3 @@ jobs:
         password: ${{ secrets.DOCKER_HUB_PASSWORD }}
         repository: ${{ secrets.DOCKER_HUB_REPOSITORY }}
         tag_with_ref: true
-
