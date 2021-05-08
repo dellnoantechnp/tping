@@ -12,12 +12,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: set tag seconds
+      run: |
+        echo "TAG=$(date +%s)" >> $GITHUB_ENV
+    - name: output env.TAG
+      run: echo ${{env.TAG}}
     - name: Check out the repo
       uses: actions/checkout@v2
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_HUB_REPOSITORY }}:$(date +%s)
+      run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_HUB_REPOSITORY }}:${{env.TAG}}
     - name: Unit Test
-      run: docker run --name unit_test ${{ secrets.DOCKER_HUB_REPOSITORY }}:$(date +"%s") -d www.google.com -p 443 -vvv 
+      run: docker run --name unit_test ${{ secrets.DOCKER_HUB_REPOSITORY }}:${{env.TAG}} -d www.google.com -p 443 -vvv 
     - name: rm test job
       run: docker rm unit_test
     - name: Push to Docker Hub
