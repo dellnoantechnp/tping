@@ -43,6 +43,7 @@ else:
     }
 
     def UseStyle(msg, mode = '', fore = '', back = '40'):
+        back = ''
         fore  = '%s' % STYLE['fore'][fore] if fore in STYLE['fore'] else ''
         style = ';'.join([s for s in [mode, fore, back] if s])
         style = '\033[%sm' % style if style else ''

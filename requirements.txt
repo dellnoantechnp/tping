@@ -1,2 +1,3 @@
 PySocks
-tdigest
+#tdigest
+numpy

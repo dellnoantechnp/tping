@@ -18,10 +18,13 @@ except:
     exit(130)
 # author: Eric.Ren
 # prog: tping.exe
-__version__="1.8.1"
+__version__="1.8.3"
 
+has_percentile = 0
 try:
-    from tdigest import TDigest
+    # from tdigest import TDigest
+    from numpy import percentile
+    has_percentile = 1
 except:
     pass
 
@@ -36,7 +39,7 @@ class Check_Network:
     STATUS_CODE_HTTP_PROXY_CONNECT_ERROR=25
     STATUS_CODE_UDP_TIMEOUT=6
     STATUS_CODE_PROMISE_TIMEOUT=7
-    __CHECK_DOMAIN_LIST=['www.baidu.com', 'www.sina.com.cn', 'mirrors.aliyun.com']
+    __CHECK_DOMAIN_LIST=['www.baidu.com', 'www.microsoft.com', 'www.apple.com']
 
     def __init__(self, verbose, family_IPv4=True, quiet=False, promise=False, socks5:str=False,
                  HTTP_PROXY:str=False, proxy_user=None, laddr='', lport=0, timeout=3):
@@ -402,15 +405,21 @@ class Check_Network:
                 avg_ms=0
 
             # 打印百分比分布信息 percentile
-            if sys.modules.get("tdigest"):
-                digest = TDigest()
-                for item in self.ms_list:
-                    digest.update(item)
-                p50 = digest.percentile(50)
-                p90 = digest.percentile(90)
-                p99 = digest.percentile(99)
-                percentile_string = "\tp50: %.2f p90: %.2f p99: %.2f" % (
-                    p50, p90, p99
+            # if sys.modules.get("tdigest"):
+            if has_percentile:
+                # digest = TDigest()
+                # for item in self.ms_list:
+                #     digest.update(item)
+                # p50 = digest.percentile(50)
+                # p90 = digest.percentile(90)
+                # p99 = di
+                # gest.percentile(99)
+                p50 = percentile(self.ms_list, 50)
+                p80 = percentile(self.ms_list, 80)
+                p90 = percentile(self.ms_list, 90)
+                p99 = percentile(self.ms_list, 99)
+                percentile_string = "\t p50: %.2f  p80: %.2f  p90: %.2f  p99: %.2f" % (
+                    p50, p80, p90, p99
                 )
             else:
                 percentile_string = ""
