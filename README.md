@@ -2,7 +2,7 @@
 A simple tcp RTT test program by Python.
 tping 程序测试网络连通性以及tcp往返延时。
 
-release version: 1.8.2
+release version: 1.8.3
 
 ## Python version Install
 ```shell
@@ -31,17 +31,17 @@ usage: tping [-h] [-d DESTINATION] [-p PORT] [-c COUNT] [-v] [-q] [-t TIMEOUT]
 Detect network tcp connection validity and packet delay time.
 
 optional arguments:
-  -h, --help            show this help message and exit
+  -h, --help            show this help message and exit.
   -d DESTINATION, --destination DESTINATION
                         ip_addr|hostname|DomainName
-  -p PORT, --port PORT  tcp port number, or multiport number Ex:
+  -p PORT, --port PORT  tcp port number, or multiport number. Example:
                         80|80,443|1-65535
   -c COUNT, --count COUNT
-                        Check ping count
+                        Check tping count
   -v, --verbose         more verbose message, [-v|-vv|-vvv]
   -q, --quiet           Silent or quiet mode.
   -t TIMEOUT, --timeout TIMEOUT
-                        Connection timeout seconds. [default timeout 3s]
+                        Connection timeout seconds. [default 3s]
   -P PROMISE, --promise PROMISE
                         保证结果返回的时间 seconds，设置此参数后 -c|--count 将失效
   --socks5 <address:port>
@@ -62,71 +62,72 @@ optional arguments:
 #### Normal Connect RTT Test
 ```
 # ./tping -d www.amazon.com -p 443
-239.8 ms
-239.4 ms
-243.2 ms
-481.4 ms
-234.9 ms
-236.1 ms
-1239.6 ms
-232.1 ms
-241.4 ms
-235.6 ms
-total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 210.92 ms   p50: 239.58 p90: 860.50 p99: 1239.62
+291.8 ms
+timeout
+235.9 ms
+244.6 ms
+294.9 ms
+timeout
+361.7 ms
+306.8 ms
+306.3 ms
+306.3 ms
+total: 10  success: 8  failure: 2  s_rate: 0.80  f_rate: 0.20  avg_ms: 293.54 ms         p50: 300.58  p80: 306.57  p90: 323.23  p99: 357.83
 ```
 
 #### Detail information
 ```
 # ./tping -d www.amazon.com -p 443 -v
-99.84.198.32    <- 190.9 ms
-99.84.198.32    <- 195.0 ms
-99.84.198.32    <- 198.1 ms
-99.84.198.32    <- 198.7 ms
-99.84.198.32    <- 1194.1 ms
-99.84.198.32    <- 197.2 ms
-99.84.198.32    <- 199.2 ms
-99.84.198.32    <- 199.4 ms
-99.84.198.32    <- 192.8 ms
-99.84.198.32    <- 190.0 ms
-total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 295.53 ms p50: 197.62 p90: 696.76 p99: 1194.08
+13.224.162.195  <- timeout          ## Red
+13.224.162.195  <- 264.7 ms         ## Green
+13.224.162.195  <- timeout          ## Red
+13.224.162.195  <- 260.1 ms         ## Green
+13.224.162.195  <- 307.2 ms         ## Green
+13.224.162.195  <- 248.3 ms
+13.224.162.195  <- 295.1 ms
+13.224.162.195  <- 240.9 ms
+13.224.162.195  <- 339.7 ms
+13.224.162.195  <- 306.5 ms
+total: 10  success: 8  failure: 2  s_rate: 0.80  f_rate: 0.20  avg_ms: 282.82 ms         p50: 279.92  p80: 306.91  p90: 316.94  p99: 337.45
+
 
 # ./tping -d www.amazon.com -p 443 --count 3 -vv
-[2020-12-11 12:31:32.967200]  99.84.198.32:443     <- 172.17.20.21:6209 199.5 ms
-[2020-12-11 12:31:33.167248]  99.84.198.32:443     <- 172.17.20.21:18812  194.3 ms
-[2020-12-11 12:31:33.361985]  99.84.198.32:443     <- 172.17.20.21:7677 1192.0 ms
-total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 528.62 ms p50: 199.50 p90: 1192.00 p99: 1192.00
+13.224.162.195:443   <- 192.168.22.5:61486      241.5 ms
+13.224.162.195:443   <- 192.168.22.5:61489      238.1 ms
+13.224.162.195:443   <- 192.168.22.5:61490      1288.8 ms
+total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 589.47 ms  p50: 241.49  p80: 869.89  p90: 1079.35  p99: 1267.87
+
 
 # tping.exe -d www.amazon.com -p 443 --count 3 -vvv
-[2020-12-11 12:31:32.967200]  99.84.198.32:443     <- 172.17.20.21:6209 199.5 ms
-[2020-12-11 12:31:33.167248]  99.84.198.32:443     <- 172.17.20.21:18812  194.3 ms
-[2020-12-11 12:31:33.361985]  99.84.198.32:443     <- 172.17.20.21:7677 1192.0 ms
-total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 528.62 ms p50: 199.50 p90: 1192.00 p99: 1192.00
-
+[2021-08-31 02:47:51.287668]    13.224.162.195:443   <- 192.168.22.5:61491      320.2 ms
+[2021-08-31 02:47:51.608686]    13.224.162.195:443   <- 192.168.22.5:61492      239.9 ms
+[2021-08-31 02:47:51.849079]    13.224.162.195:443   <- 192.168.22.5:61495      244.7 ms
+total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 268.30 ms  p50: 244.74  p80: 290.03  p90: 305.12  p99: 318.71
 ```
 
 #### Multiport Test
 ```shell
 ./tping -d www.bestbuy.com -p 80,443 -vv
-23.44.52.214:443     <- 172.17.20.21:27849  95.0  ms
-23.44.52.214:80      <- 172.17.20.21:2127 1093.8 ms
-23.44.52.214:443     <- 172.17.20.21:22335  1091.3 ms
-23.44.52.214:443     <- 172.17.20.21:10730  1089.2 ms
-23.44.52.214:80      <- 172.17.20.21:13862  83.8  ms
-23.44.52.214:443     <- 172.17.20.21:29566  1089.0 ms
-23.44.52.214:443     <- 172.17.20.21:2968 90.1  ms
-23.44.52.214:443     <- 172.17.20.21:9972 90.1  ms
-23.44.52.214:80      <- 172.17.20.21:19536  89.8  ms
-23.44.52.214:443     <- 172.17.20.21:15409  95.5  ms
-total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 490.76 ms p50: 95.28 p90: 1092.58 p99: 1093.83
+13.224.162.195:80    <- 192.168.22.5:61506      233.5 ms        ## Port 80
+13.224.162.195:443   <- 192.168.22.5:61508      323.0 ms        ## Port 443
+13.224.162.195:443   <- 192.168.22.5:61509      241.7 ms        ## Green
+13.224.162.195:443   <- 192.168.22.5:61510      236.5 ms
+13.224.162.195:443   <- 192.168.22.5:61511      339.0 ms
+13.224.162.195:80    <- 192.168.22.5:61512      1248.3 ms
+13.224.162.195:443   <- 192.168.22.5:61513      240.4 ms
+13.224.162.195:80    <- 192.168.22.5:61514      244.4 ms
+13.224.162.195:80    <- 192.168.22.5:61515      236.7 ms
+13.224.162.195:80    <- 192.168.22.5:61516      240.8 ms
+total: 10  success: 10  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 358.44 ms        p50: 241.27  p80: 326.18  p90: 429.93  p99: 1166.51
 ```
 
 #### count 3
 ```
 # ./tping -d www.amazon.com -p 443 -c 3
-201.8 ms
-205.8 ms
-202.8 ms
-total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 203.50 ms p50: 202.84 p90: 205.84 p99: 205.84
+309.3 ms
+233.0 ms
+238.6 ms
+total: 3  success: 3  failure: 0  s_rate: 1.00  f_rate: 0.00  avg_ms: 260.29 ms  p50: 238.62  p80: 281.01  p90: 295.13  p99: 307.85
 ```
 
 #### use socks5 proxy
