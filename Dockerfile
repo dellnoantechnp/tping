@@ -1,6 +1,9 @@
 # Simply inherit the Python 3 image. 
 FROM python:3.9
 
+# change local time zone
+cp /usr/share/zoneinfo/Asia/Shanghai    /etc/localtime
+
 # Set an environment variable 
 ENV APP /tping
 
