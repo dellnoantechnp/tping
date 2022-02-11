@@ -2,7 +2,8 @@
 FROM python:3.9
 
 # change local time zone
-cp /usr/share/zoneinfo/Asia/Shanghai    /etc/localtime
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+RUN echo 'Asia/Shanghai' >/etc/timezone
 
 # Set an environment variable 
 ENV APP /tping
