@@ -1,8 +1,14 @@
-# tping
-A simple tcp RTT test program by Python.
-tping 程序测试网络连通性以及tcp往返延时。
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/dellnoantechnp/tping)
 
-release version: 1.8.3
+# tping
+
+> The program "tping" tests network connectivity and TCP round-trip delay, 
+> 
+> supporting the http_proxy and Socket_Proxy proxy modes in complex network structures.
+>
+> `tping` 程序测试网络连通性以及tcp往返延时，支持复杂网络结构下的http_proxy、Socket_Proxy代理模式。
+>
+> release version: 1.8.3
 
 ## Python version Install
 ```shell
